@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saga Orchestrator Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚗 Saga Orchestrator Demo</h1>
+            <p class="subtitle">Car Service Booking System - Tech Talk Demonstration</p>
+        </header>
+
+        <div class="demo-section">
+            <h2>Start New Saga</h2>
+            <div class="form-group">
+                <label for="customerId">Customer ID:</label>
+                <input type="text" id="customerId" value="123e4567-e89b-12d3-a456-426614174000" placeholder="Enter Customer ID">
+            </div>
+            <div class="form-group">
+                <label for="timeSlot">Time Slot:</label>
+                <input type="datetime-local" id="timeSlot">
+            </div>
+            <div class="form-group">
+                <label for="serviceType">Service Type:</label>
+                <input type="text" id="serviceType" value="Oil Change" placeholder="Service Type">
+            </div>
+            <div class="form-group">
+                <label for="price">Price:</label>
+                <input type="number" id="price" value="50.00" step="0.01" placeholder="Price">
+            </div>
+
+            <div class="scenario-buttons">
+                <h3>Demo Scenarios:</h3>
+                <button class="btn btn-success" onclick="startSaga('success')">
+                    ✅ Success Scenario
+                </button>
+                <button class="btn btn-danger" onclick="startSaga('booking-failure')">
+                    ❌ Booking Failure
+                </button>
+                <button class="btn btn-danger" onclick="startSaga('payment-failure')">
+                    ❌ Payment Failure
+                </button>
+                <button class="btn btn-danger" onclick="startSaga('rental-failure')">
+                    ❌ Rental Failure
+                </button>
+                <button class="btn btn-warning" onclick="startSaga('timeout')">
+                    ⏱️ Timeout Scenario
+                </button>
+            </div>
+        </div>
+
+        <div class="flow-section">
+            <h2>Saga Flow Visualization</h2>
+            <div id="flowDiagram" class="flow-diagram">
+                <!-- Forward flow -->
+                <div class="flow-path forward-flow">
+                    <div class="flow-step" data-step="start">
+                        <div class="step-icon">🚀</div>
+                        <div class="step-label">Start</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step" data-step="booking">
+                        <div class="step-icon">📅</div>
+                        <div class="step-label">Booking</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step" data-step="payment">
+                        <div class="step-icon">💳</div>
+                        <div class="step-label">Payment</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step" data-step="rental">
+                        <div class="step-icon">🚙</div>
+                        <div class="step-label">Rental</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step" data-step="notifications">
+                        <div class="step-icon">📧</div>
+                        <div class="step-label">Notifications</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step" data-step="complete">
+                        <div class="step-icon">✅</div>
+                        <div class="step-label">Complete</div>
+                    </div>
+                </div>
+                <!-- Compensation flow (hidden by default) -->
+                <div class="flow-path compensation-flow" style="display: none;">
+                    <div class="compensation-label">Compensation Flow:</div>
+                    <div class="flow-step compensation-step" data-step="compensate-rental">
+                        <div class="step-icon">↩️</div>
+                        <div class="step-label">Compensate Rental</div>
+                    </div>
+                    <div class="flow-arrow compensation-arrow">←</div>
+                    <div class="flow-step compensation-step" data-step="compensate-payment">
+                        <div class="step-icon">↩️</div>
+                        <div class="step-label">Compensate Payment</div>
+                    </div>
+                    <div class="flow-arrow compensation-arrow">←</div>
+                    <div class="flow-step compensation-step" data-step="compensate-booking">
+                        <div class="step-icon">↩️</div>
+                        <div class="step-label">Compensate Booking</div>
+                    </div>
+                    <div class="flow-arrow compensation-arrow">→</div>
+                    <div class="flow-step compensation-step" data-step="failed">
+                        <div class="step-icon">❌</div>
+                        <div class="step-label">Failed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sagas-section">
+            <h2>Active Sagas</h2>
+            <div id="sagasList" class="sagas-list">
+                <p class="empty-state">No active sagas. Start a saga to see it here.</p>
+            </div>
+        </div>
+
+        <div class="architecture-section">
+            <h2>System Architecture</h2>
+            <div id="architectureDiagram" class="architecture-diagram">
+                <!-- SVG will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

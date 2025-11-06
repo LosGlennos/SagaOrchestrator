@@ -1,0 +1,148 @@
+# Saga Orchestrator POC - Project Rules
+
+## Project Overview
+This is a Proof of Concept (POC) implementing the Saga Orchestrator Pattern for a car service booking system. The system allows users to book time slots for car service, process payments, automatically book rental cars, and send notifications.
+
+## Technical Stack
+- **.NET 9** - Latest .NET framework
+- **ASP.NET Core Minimal APIs** - API endpoints using Minimal API pattern (not Controllers)
+- **PostgreSQL** - Database for each service (Npgsql)
+- **RabbitMQ** - Message broker for event-driven communication
+- **Event Sourcing** - Custom PostgreSQL-based event store (event table per service)
+- **Docker & Docker Compose** - Containerization and orchestration
+
+## Architecture
+
+### Services
+1. **SagaOrchestrator** - Main orchestrator service that coordinates the saga
+2. **BookingService** - Handles time slot booking
+3. **PaymentService** - Processes payments
+4. **RentalCarService** - Handles rental car bookings
+5. **NotificationService** - Sends notifications to shop and customers
+
+### Saga Flow
+1. Book time slot → BookingService
+2. Slot booked event → SagaOrchestrator
+3. Process payment → PaymentService
+4. Payment processed event → SagaOrchestrator
+5. Book rental car → RentalCarService
+6. Rental booked event → SagaOrchestrator
+7. Send shop notification → NotificationService
+8. Send customer notification → NotificationService
+
+## Folder Structure
+
+```
+SagaOrchestrator/
+├── .cursorrules                          # Project rules and structure documentation
+├── docker-compose.yml                     # Docker compose for all services
+├── README.md                              # Project documentation
+├── SagaOrchestrator.sln                   # Solution file
+│
+├── src/
+│   ├── SagaOrchestrator/                 # Main orchestrator service
+│   │   ├── SagaOrchestrator.csproj
+│   │   ├── Program.cs                     # Minimal API endpoints
+│   │   ├── Services/
+│   │   ├── Models/
+│   │   └── Dockerfile
+│   │
+│   ├── BookingService/                   # Time slot booking service
+│   │   ├── BookingService.csproj
+│   │   ├── Program.cs                     # Minimal API endpoints
+│   │   ├── Services/
+│   │   ├── Models/
+│   │   ├── Events/
+│   │   ├── EventStore/
+│   │   └── Dockerfile
+│   │
+│   ├── PaymentService/                   # Payment processing service
+│   │   ├── PaymentService.csproj
+│   │   ├── Program.cs                     # Minimal API endpoints
+│   │   ├── Services/
+│   │   ├── Models/
+│   │   ├── Events/
+│   │   ├── EventStore/
+│   │   └── Dockerfile
+│   │
+│   ├── RentalCarService/                 # Rental car booking service
+│   │   ├── RentalCarService.csproj
+│   │   ├── Program.cs                     # Minimal API endpoints
+│   │   ├── Services/
+│   │   ├── Models/
+│   │   ├── Events/
+│   │   ├── EventStore/
+│   │   └── Dockerfile
+│   │
+│   └── NotificationService/             # Notification service
+│       ├── NotificationService.csproj
+│       ├── Program.cs                     # Minimal API endpoints
+│       ├── Services/
+│       ├── Models/
+│       ├── Events/
+│       ├── EventStore/
+│       └── Dockerfile
+│
+└── docker/
+    ├── postgres-init/                    # PostgreSQL initialization scripts
+    └── rabbitmq/                         # RabbitMQ configuration (if needed)
+```
+
+## Coding Standards
+
+### API Design
+- Use **Minimal APIs** (not Controllers) for all endpoints
+- Follow RESTful conventions where applicable
+- Use appropriate HTTP status codes
+
+### Event Sourcing
+- Each service maintains its own event store table in PostgreSQL
+- Events should be immutable and append-only
+- Event store should include: EventId, AggregateId, EventType, EventData, Timestamp, Version
+
+### Message Broker
+- Use RabbitMQ for asynchronous communication between services
+- Publish events to RabbitMQ after persisting to event store
+- Use appropriate exchange and queue naming conventions
+
+### Database
+- Each service has its own PostgreSQL database for independence
+- Use connection pooling
+- Implement proper migrations for event store schema
+
+### Docker
+- Each service should have its own Dockerfile
+- Services should be independently runnable
+- Use docker-compose for local development and testing
+
+### Error Handling
+- Implement proper error handling and logging
+- Use appropriate exception types
+- Return meaningful error messages
+
+### Dependencies
+- Keep services loosely coupled
+- Use dependency injection
+- Follow SOLID principles
+
+## Development Guidelines
+
+1. **Service Independence**: Each service should be able to run independently
+2. **Event-Driven**: Services communicate via events through RabbitMQ
+3. **Event Sourcing**: All state changes are stored as events
+4. **Idempotency**: Ensure operations are idempotent where possible
+5. **Observability**: Include logging and health checks
+
+## Environment Variables
+
+Each service should use environment variables for:
+- Database connection strings
+- RabbitMQ connection settings
+- Service-specific configuration
+
+## Testing
+
+- Services should be testable in isolation
+- Use docker-compose for integration testing
+- Mock external dependencies in unit tests
+

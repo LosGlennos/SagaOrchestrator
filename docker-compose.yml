@@ -1,0 +1,259 @@
+version: '3.8'
+
+services:
+  # PostgreSQL databases - one per service for independence
+  postgres-booking:
+    image: postgres:16-alpine
+    container_name: saga-postgres-booking
+    environment:
+      POSTGRES_DB: bookingdb
+      POSTGRES_USER: bookinguser
+      POSTGRES_PASSWORD: bookingpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-booking-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookinguser -d bookingdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  postgres-payment:
+    image: postgres:16-alpine
+    container_name: saga-postgres-payment
+    environment:
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: paymentuser
+      POSTGRES_PASSWORD: paymentpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paymentuser -d paymentdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  postgres-rental:
+    image: postgres:16-alpine
+    container_name: saga-postgres-rental
+    environment:
+      POSTGRES_DB: rentaldb
+      POSTGRES_USER: rentaluser
+      POSTGRES_PASSWORD: rentalpass
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-rental-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rentaluser -d rentaldb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  postgres-notification:
+    image: postgres:16-alpine
+    container_name: saga-postgres-notification
+    environment:
+      POSTGRES_DB: notificationdb
+      POSTGRES_USER: notificationuser
+      POSTGRES_PASSWORD: notificationpass
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-notification-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notificationuser -d notificationdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  postgres-orchestrator:
+    image: postgres:16-alpine
+    container_name: saga-postgres-orchestrator
+    environment:
+      POSTGRES_DB: orchestratordb
+      POSTGRES_USER: orchestratoruser
+      POSTGRES_PASSWORD: orchestratorpass
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres-orchestrator-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestratoruser -d orchestratordb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  # RabbitMQ message broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: saga-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: sagauser
+      RABBITMQ_DEFAULT_PASS: sagapass
+    ports:
+      - "5672:5672"      # AMQP port
+      - "15672:15672"    # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  # Microservices
+  booking-service:
+    build:
+      context: .
+      dockerfile: src/BookingService/Dockerfile
+    container_name: saga-booking-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres-booking;Port=5432;Database=bookingdb;Username=bookinguser;Password=bookingpass"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: sagauser
+      RabbitMQ__Password: sagapass
+    ports:
+      - "5001:8080"
+    depends_on:
+      postgres-booking:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: src/PaymentService/Dockerfile
+    container_name: saga-payment-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres-payment;Port=5432;Database=paymentdb;Username=paymentuser;Password=paymentpass"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: sagauser
+      RabbitMQ__Password: sagapass
+    ports:
+      - "5002:8080"
+    depends_on:
+      postgres-payment:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+
+  rental-car-service:
+    build:
+      context: .
+      dockerfile: src/RentalCarService/Dockerfile
+    container_name: saga-rental-car-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres-rental;Port=5432;Database=rentaldb;Username=rentaluser;Password=rentalpass"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: sagauser
+      RabbitMQ__Password: sagapass
+    ports:
+      - "5003:8080"
+    depends_on:
+      postgres-rental:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: src/NotificationService/Dockerfile
+    container_name: saga-notification-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres-notification;Port=5432;Database=notificationdb;Username=notificationuser;Password=notificationpass"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: sagauser
+      RabbitMQ__Password: sagapass
+    ports:
+      - "5004:8080"
+    depends_on:
+      postgres-notification:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+
+  saga-orchestrator:
+    build:
+      context: .
+      dockerfile: src/SagaOrchestrator/Dockerfile
+    container_name: saga-orchestrator
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres-orchestrator;Port=5432;Database=orchestratordb;Username=orchestratoruser;Password=orchestratorpass"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: sagauser
+      RabbitMQ__Password: sagapass
+    ports:
+      - "5010:8080"
+    depends_on:
+      postgres-orchestrator:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: saga-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - saga-orchestrator
+    networks:
+      - saga-network
+
+volumes:
+  postgres-booking-data:
+  postgres-payment-data:
+  postgres-rental-data:
+  postgres-notification-data:
+  postgres-orchestrator-data:
+  rabbitmq-data:
+
+networks:
+  saga-network:
+    driver: bridge
+
